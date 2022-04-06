@@ -23,14 +23,24 @@
         $obj -> hireDate="2010-11-18";
         $json = json_encode($obj);
         */
-        $data = file_get_contents("myJson.js");
+        //$data = file_get_contents("myJson.js");
 
         switch($_SERVER['REQUEST_METHOD']){
 
             case 'GET':
-                header("HTTP/1.1 200 OK");
-                header("Content-Type: application/json");
-                var_dump($data);
+                $page=0;
+                $size=20;
+                /*header("HTTP/1.1 200 OK");
+                header("Content-Type: application/json");*/
+                echo "<br>";
+                $query="select * from employees order by id limit " . $page . ", " . $size;
+                if ($result =$mysqli->query($query)) {
+                    while($row=$result->fetch_assoc()){
+                        $array[]=$row;
+                    }
+                }
+                $data=json_encode($array);
+                echo $data;
                 break;
             case 'POST':
                 echo 'Success Post';
