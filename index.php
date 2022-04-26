@@ -1,72 +1,163 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <title>mio-sito</title>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA==" crossorigin="anonymous" referrerpolicy="no-referrer"/>
-    </head>
-    <body style="background-color: red">
-
-    
-    <?PHP
-
+<?PHP 
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: *');
     require("connessione.php");
-
+    header('Content-Type: application/json');
+    
+        //variabili varie
         $page=@$_GET["page"] ?? 0;
         $size=@$_GET["size"] ?? 20;
-        $elementi;
+        $id = @$_GET["id"] ?? 0;
+        $conta = contaRighe();
+        $last = ceil($conta/$size) -1;
+        $urlDiBase = "http://localhost:8080/index.php";
         $query="select count(id) as tot from employees";
-        if ($result =$mysqli->query($query)) {
-            while($row=$result->fetch_assoc()){
-                $elementi=$row["tot"];
-            }
-        };
-        $pagineTot=ceil($elementi/$size);        
+        
+        //array del json
+        $arrayJSON = array ();
 
-    for($i=0;$i<9;$i++){echo '<i class="fa-solid fa-basketball" style="display: inline-block">&nbsp</i>';}
-    echo '<br>';
-    for($i=0;$i<10;$i++){echo '<i class="fa-solid fa-child" style="display: inline-block">&nbsp</i>';}
+        $arrayJSON['_embedded'] = array(
+            "employees" => array(
+                
+            )
+        );
+    
+        $arrayJSON['_links'] = links($page, $size, $last, $urlDiBase);
 
-        $pagine=array(
+        $arrayJSON['page']=array(
             "size"=> $size,
-            "TotalElements"=> $elementi,
-            "TotalPages"=> $pagineTot,
+            "totalElements"=> $conta,
+            "totalPages"=> $last,
             "number"=> $page
 
         );
-        
 
+        //switch per GET, POST, ecc...
         switch($_SERVER['REQUEST_METHOD']){
 
             case 'GET':
-                
-                echo "<br>";
-                $query="select * from employees order by id limit " . $page*$size . ", " . $size;
-                if ($result =$mysqli->query($query)) {
-                    while($row=$result->fetch_assoc()){
-                        $array[]=$row;
-                    }
+                if($id != 0){
+                    $arrayJSON['_embedded']['employees'] = GET_BY_ID($id);
+                    echo json_encode($arrayJSON);
+                }else{
+                    $arrayJSON['_embedded']['employees'] = GET($page*$size, $size);
+                    echo json_encode($arrayJSON);
                 }
-                $array[]=["pages" => $pagine];
-                $data=json_encode($array);
-                echo $data;
                 break;
-
+    
             case 'POST':
-                echo 'Success Post';
+                $data = json_decode(file_get_contents('php://input'), true);
+                POST($data["first_name"], $data["last_name"], $data["gender"]);
+    
+                echo json_encode($data);
                 break;
+    
             case 'PUT':
-                echo 'Success Put';
+                $data = json_decode(file_get_contents('php://input'), true);
+                PUT($data["first_name"], $data["last_name"], $data["gender"], $id);
+    
+                echo json_encode($data);
                 break;
+    
             case 'DELETE':
+                DELETE($id);
+    
+                if(($key = array_search('id: '. $id, $arrayJSON)) !== false){
+                    unset($arrayJSON[$key]);
+                }
+    
+                echo json_encode($arrayJSON);
                 break;
+            
             default:
-                header("HTTP/1.1 400 NOT FOUND");
+                header("HTTP/1.1 400 BAD REQUEST");
                 break;
-            ;
 
         }
 
+        function contaRighe(){
+            require("connessione.php");
+            $query = "SELECT count(*) FROM employees";
+    
+            $result = $mysqli-> query($query);
+            $row = $result-> fetch_row();
+    
+            return $row[0];
+        }   
+
+        function href($urlDiBase, $page, $size){
+            return $urlDiBase . "?page=" . $page . "&size=" . $size;
+        }
+    
+        //vari link
+        function links($page, $size, $last, $urlDiBase){
+            $links = array(
+                "first" => array ( "href" => href($urlDiBase, 0, $size)),
+                "self" => array ( "href" => href($urlDiBase, $page, $size), "templated" => true),
+                "last" => array ( "href" => href($urlDiBase, $last, $size))
+            );
+            
+            if($page > 0){
+                $links["prev"] = array( "href" => href($urlDiBase, $page - 1, $size));
+            }
+            
+            if($page < $last){
+                $links["next"] = array ( "href" => href($urlDiBase, $page + 1, $size));
+            }
+            
+            return $links;
+        }
+
+        //metodi get, post, ecc...
+
+        function GET($page, $lenght){
+            require("connessione.php");
+            $query = "SELECT * FROM employees ORDER BY id LIMIT $page, $lenght";
+            $rows = array();
+    
+            if($result = $mysqli-> query($query)){
+                while($row = $result-> fetch_assoc()){
+                    $rows[] = $row;
+                }
+            }
+    
+            return $rows;
+        }
+    
+        function GET_BY_ID($id){
+            require("connessione.php");
+            $query = "SELECT * FROM employees WHERE id = $id";
+            $rows = array();
+    
+            if($result = $mysqli-> query($query)){
+                while($row = $result-> fetch_assoc()){
+                    $rows[] = $row;
+                }
+            }
+    
+            return $rows;
+        }
+    
+        function POST($firstN, $lastN, $g){
+            require("connessione.php");
+            $query = "INSERT INTO employees (first_name, last_name, gender) VALUES ('$firstN', '$lastN', '$g')";
+            $result = $mysqli-> query($query);
+    
+        }
+    
+        function PUT($firstN, $lastN, $g, $id){
+            require("connessione.php");
+            $query = "UPDATE employees SET first_name = '$firstN', last_name = '$lastN', gender = '$g' WHERE id = '$id'";
+            $result = $mysqli-> query($query);
+            
+        }
+    
+        function DELETE($id){
+            require("connessione.php");
+            $query = "DELETE FROM employees WHERE id = $id";
+            $result = $mysqli-> query($query);
+            
+        }
     ?>
 
-    </body>
-</html>
+   

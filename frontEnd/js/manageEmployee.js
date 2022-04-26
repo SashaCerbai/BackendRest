@@ -15,6 +15,7 @@ function countProps(obj) {
 }
 
 function updateEmployees() {
+
     var rows = "";
 
     var css_class = "dim-background";
@@ -31,8 +32,9 @@ function updateEmployees() {
         counter++;
         rows += "<tr class='" + cls + "' id='row-" + value.id + "'>";
         rows += "<td>" + value.id + "</td>";
-        rows += "<td><span id='name-" + value.id + "'>" + value.firstName + "</span><input type='text' class='display-none' id='input-name-" + value.id + "'  placeholder='" + value.firstName + "'></td>";
-        rows += "<td><span id='lastname-" + value.id + "'>" + value.lastName + "</span><input type='text' class='display-none' id='input-lastname-" + value.id + "' placeholder='" + value.lastName + "'></td>";
+        rows += "<td><span id='name-" + value.id + "'>" + value.first_name + "</span><input type='text' class='display-none' id='input-name-" + value.id + "'  placeholder='" + value.first_name + "'></td>";
+        rows += "<td><span id='lastname-" + value.id + "'>" + value.last_name + "</span><input type='text' class='display-none' id='input-lastname-" + value.id + "' placeholder='" + value.last_name + "'></td>";
+        rows = rows + '<td>' + value.gender + '</td>';
         rows += "<td> <button class='delete-button' id='" + value.id + "' onclick='removeEmployee(" + value.id + ")'>Cancella</button>" +
             "<button class='change-button' id='change-" + value.id + "' onclick='change(" + value.id + ")'>Modifica</button>"
         "</td>";
@@ -90,11 +92,11 @@ function save(id) {
     $("#input-lastname-" + id).val("");
 
     let payload = {
-        firstName: newName,
+        first_name: newName,
         id: id,
-        lastName: newLastname,
-        birthDate: "",
-        hireDate: "",
+        last_name: newLastname,
+        birth_date: "",
+        hire_date: "",
         gender: ""
     };
     console.log(id);
@@ -104,7 +106,7 @@ function save(id) {
 function saveChanges(payload) {
     $.ajax({
         method: "PUT",
-        url: "http://localhost:8080/index.php",
+        url: "http://localhost:8080/index.php" + "?id=" + payload.id,
         dataType: "json",
         contentType: "application/json",
         data: JSON.stringify(payload)
@@ -122,7 +124,7 @@ function changeNames(name, lastname, id) {
 
 function removeEmployee(id) {
     $.ajax({
-        url: firstPage + "/" + id,
+        url: firstPage + "?id=" + id,
         type: 'DELETE',
         success: function(result) {
             removeFromTable(id);
@@ -154,11 +156,11 @@ function recolorRows() {
 function addEmployee(name, lastname, birth, hiredate, gender) {
     let payload = ({
         "id": nextId,
-        "birthDate": birth,
-        "firstName": name,
-        "lastName": lastname,
+        "birth_date": birth,
+        "first_name": name,
+        "last_name": lastname,
         "gender": gender,
-        "hireDate": hiredate,
+        "hire_date": hiredate,
     });
     saveEmployee(payload);
     updateEmployees();
@@ -185,6 +187,7 @@ function saveModalInputs() {
         $("#sex").val()
     );
     updateEmployees();
+    location.reload();
 }
 
 var nextPage;
@@ -251,7 +254,7 @@ function loadLastPage() {
 }
 
 function updatePageNumber(number) {
-    $("#page-counter").text(number + 1);
+    $("#page-counter").text(number);
 }
 
 var data;
