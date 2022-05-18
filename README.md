@@ -6,6 +6,7 @@
 -docker run --name my-mysql-server --rm -v /home/informatica/Desktop/mio-sito/mysqldata:/var/lib/mysql -v /home/informatica/Desktop/mio-sito/dump:/dump -e MYSQL_ROOT_PASSWORD=my-secret-pw -p 3306:3306 -d mysql:latest<br>
 -docker exec -it my-mysql-server bash<br>
 -mysql -u root -p < /dump/create_employee.sql<br>
+-Inserire password=my-secret-pw<br>
 -exit;<br><br>
 
 2)Cercare nell'URL "http://localhost:8080/frontEnd/index.html" <br>
